@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DukaSmart Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0a0f0d">
+<style>
+  :root {
+    --bg: #0a0f0d;
+    --surface: #111a15;
+    --card: #172019;
+    --border: #1f3024;
+    --green: #22c55e;
+    --green-dim: #16a34a;
+    --green-glow: rgba(64, 34, 197, 0.15);
+    --amber: #f59e0b;
+    --red: #ef4444;
+    --text: #e8f5ec;
+    --muted: #6b8f74;
+    --accent: #4ade80;
+    --wallpaper-opacity: 0.06;
+    --card-pattern-opacity: 0.035;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Plus Jakarta Sans',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; transition:background .25s,color .25s; }
+
+  /* Subtle distant wallpaper */
+  body::before {
+    content:''; position:fixed; inset:0; z-index:0; pointer-events:none; mix-blend-mode:screen;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 800'><defs><filter id='f' x='-50%' y='-50%' width='200%' height='200%'><feGaussianBlur stdDeviation='80'/></filter></defs><rect width='100%' height='100%' fill='none'/><circle cx='200' cy='150' r='220' fill='%234ade80' opacity='0.12' filter='url(%23f)'/><circle cx='950' cy='560' r='300' fill='%2306b6d4' opacity='0.09' filter='url(%23f)'/><circle cx='700' cy='80' r='160' fill='%23f59e0b' opacity='0.06' filter='url(%23f)'/></svg>");
+    background-repeat:no-repeat; background-position: center -60px; background-size:cover; opacity:var(--wallpaper-opacity);
+    transform:scale(1.08);
+  }
+
+  /* LOGIN */
+  #loginScreen {
+    display:flex; align-items:center; justify-content:center;
+    min-height:100vh; background:var(--bg);
+    background-image: radial-gradient(ellipse at 30% 20%, rgba(34,197,94,0.08) 0%, transparent 60%);
+  }
+  .login-box {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:20px; padding:40px 36px; width:100%; max-width:380px;
+    box-shadow: 0 0 60px rgba(34,197,94,0.08); transition:background .25s,box-shadow .25s,border-color .25s;
+    position:relative; overflow:hidden;
+  }
+  #loginScreen { background:linear-gradient(rgba(0,0,0,0.35),rgba(0,0,0,0.45)); }
+  .login-box-inner { position:relative; z-index:2; }
+  .login-accent { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+  .login-accent img { width:46px; height:46px; border-radius:10px; object-fit:cover; }
+  .login-box::after { content:''; position:absolute; inset:0; background:linear-gradient(180deg,rgba(0,0,0,0.12),rgba(0,0,0,0.18)); pointer-events:none; }
+  .login-logo { font-size:2rem; font-weight:800; color:var(--accent); letter-spacing:-1px; margin-bottom:4px; }
+  .login-sub { color:var(--muted); font-size:.85rem; margin-bottom:28px; }
+  .login-box input { width:100%; padding:12px 16px; background:var(--card); border:1px solid var(--border); border-radius:10px; color:var(--text); font-size:.95rem; margin-bottom:12px; outline:none; font-family:inherit; }
+  .login-box input:focus { border-color:var(--green); }
+  .btn-primary { width:100%; padding:13px; background:var(--green); color:#000; font-weight:700; font-size:1rem; border:none; border-radius:10px; cursor:pointer; font-family:inherit; transition:.2s; }
+  .btn-primary:hover { background:var(--accent); }
+  .login-hint { font-size:.78rem; color:var(--muted); margin-top:10px; text-align:center; }
+  .setup-link { color:var(--green); cursor:pointer; text-decoration:underline; }
+
+  /* SETUP */
+  #setupScreen { display:none; align-items:center; justify-content:center; min-height:100vh; background:var(--bg); }
+  .setup-box { background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:40px 36px; width:100%; max-width:400px; }
+  .setup-box h2 { font-size:1.4rem; font-weight:800; margin-bottom:6px; }
+  .setup-box p { color:var(--muted); font-size:.85rem; margin-bottom:24px; }
+  .form-group { margin-bottom:14px; }
+  .form-group label { display:block; font-size:.82rem; color:var(--muted); margin-bottom:5px; font-weight:600; text-transform:uppercase; letter-spacing:.5px; }
+  .form-group input { width:100%; padding:11px 14px; background:var(--card); border:1px solid var(--border); border-radius:10px; color:var(--text); font-size:.95rem; outline:none; font-family:inherit; }
+  .form-group input:focus { border-color:var(--green); }
+
+  /* APP */
+  #app { display:none; flex-direction:column; min-height:100vh; }
+  header { background:var(--surface); border-bottom:1px solid var(--border); padding:14px 18px; display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; z-index:100; }
+  .header-logo { font-size:1.2rem; font-weight:800; color:var(--accent); letter-spacing:-0.5px; }
+  .header-shop { font-size:.78rem; color:var(--muted); }
+  .header-right { display:flex; gap:8px; align-items:center; }
+  .header-time { font-family:'Space Mono',monospace; font-size:.75rem; color:var(--muted); }
+  .logout-btn { background:none; border:1px solid var(--border); color:var(--muted); padding:5px 10px; border-radius:7px; cursor:pointer; font-size:.75rem; font-family:inherit; }
+
+  /* NAV */
+  nav { background:var(--surface); border-top:1px solid var(--border); display:flex; position:fixed; bottom:0; left:0; right:0; z-index:100; }
+  nav button { flex:1; padding:11px 4px 8px; background:none; border:none; color:var(--muted); font-family:inherit; font-size:.7rem; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:3px; transition:.15s; }
+  nav button.active { color:var(--green); }
+  nav button:hover { color:var(--text); }
+  nav button svg { width:20px; height:20px; }
+
+  main { flex:1; padding:16px; padding-bottom:80px; max-width:600px; margin:0 auto; width:100%; }
+
+  /* CARDS */
+  .page { display:none; }
+  .page.active { display:block; }
+  .page-title { font-size:1.3rem; font-weight:800; margin-bottom:16px; }
+
+  .stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:18px; }
+  .stat-card { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px; }
+  .stat-card.full { grid-column:1/-1; }
+  .stat-label { font-size:.73rem; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.5px; margin-bottom:4px; }
+  .stat-value { font-size:1.5rem; font-weight:800; color:var(--accent); font-family:'Space Mono',monospace; }
+  .stat-sub { font-size:.75rem; color:var(--muted); margin-top:2px; }
+
+  .alert-list { margin-bottom:18px; }
+  .alert-item { background:rgba(239,68,68,.1); border:1px solid rgba(239,68,68,.3); border-radius:10px; padding:10px 14px; font-size:.85rem; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; }
+  .alert-item .aname { font-weight:600; }
+  .alert-item .aqty { color:var(--red); font-family:'Space Mono',monospace; font-weight:700; }
+
+  /* FORMS */
+  .card { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px; margin-bottom:14px; }
+  .card::before { content:''; display:block; position:absolute; inset:0;border-radius:14px; pointer-events:none; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'><defs><filter id='b' x='-50%' y='-50%' width='200%' height='200%'><feGaussianBlur stdDeviation='12'/></filter></defs><rect width='100%' height='100%' fill='none'/><circle cx='60' cy='40' r='40' fill='%234ade80' opacity='0.06' filter='url(%23b)'/><circle cx='340' cy='360' r='60' fill='%2306b6d4' opacity='0.04' filter='url(%23b)'/></svg>"); opacity:var(--card-pattern-opacity); mix-blend-mode:overlay; }
+  .card h3 { font-size:.95rem; font-weight:700; margin-bottom:12px; color:var(--accent); }
+  .form-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px; }
+  .form-row.single { grid-template-columns:1fr; }
+  .form-row.triple { grid-template-columns:1fr 1fr 1fr; }
+  .inp { width:100%; padding:10px 12px; background:var(--surface); border:1px solid var(--border); border-radius:9px; color:var(--text); font-size:.9rem; outline:none; font-family:inherit; }
+  .inp:focus { border-color:var(--green); }
+  select.inp { cursor:pointer; }
+  .btn { padding:10px 18px; border:none; border-radius:9px; font-family:inherit; font-weight:700; font-size:.88rem; cursor:pointer; transition:.15s; }
+  .btn-green { background:var(--green); color:#000; }
+  .btn-green:hover { background:var(--accent); }
+  .btn-red { background:rgba(239,68,68,.15); color:var(--red); border:1px solid rgba(239,68,68,.3); }
+  .btn-amber { background:rgba(245,158,11,.15); color:var(--amber); border:1px solid rgba(245,158,11,.3); }
+  .btn-sm { padding:6px 12px; font-size:.78rem; }
+
+  /* TABLE */
+  .table-wrap { overflow-x:auto; margin-top:6px; }
+  table { width:100%; border-collapse:collapse; font-size:.83rem; }
+  th { text-align:left; padding:8px 10px; color:var(--muted); font-weight:600; font-size:.73rem; text-transform:uppercase; letter-spacing:.5px; border-bottom:1px solid var(--border); }
+  td { padding:9px 10px; border-bottom:1px solid rgba(31,48,36,.6); }
+  tr:last-child td { border-bottom:none; }
+  .tag { display:inline-block; padding:2px 8px; border-radius:5px; font-size:.72rem; font-weight:700; }
+  .tag-low { background:rgba(239,68,68,.15); color:var(--red); }
+  .tag-ok { background:rgba(34,197,94,.1); color:var(--green); }
+  .tag-warn { background:rgba(245,158,11,.15); color:var(--amber); }
+  .search-bar { width:100%; padding:10px 14px; background:var(--card); border:1px solid var(--border); border-radius:10px; color:var(--text); font-size:.9rem; outline:none; font-family:inherit; margin-bottom:14px; }
+  .search-bar:focus { border-color:var(--green); }
+
+  /* SELL */
+  .sell-total { font-size:2rem; font-weight:800; color:var(--accent); font-family:'Space Mono',monospace; text-align:center; padding:16px 0; }
+
+  /* HISTORY */
+  .hist-item { background:var(--card); border:1px solid var(--border); border-radius:11px; padding:12px 14px; margin-bottom:8px; }
+  .hist-top { display:flex; justify-content:space-between; align-items:flex-start; }
+  .hist-name { font-weight:700; font-size:.95rem; }
+  .hist-amount { font-family:'Space Mono',monospace; font-weight:700; color:var(--accent); }
+  .hist-meta { font-size:.75rem; color:var(--muted); margin-top:3px; }
+
+  /* CHARTS */
+  canvas { width:100% !important; border-radius:10px; }
+
+  /* RECEIPT */
+  #receiptModal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.8); z-index:200; align-items:center; justify-content:center; padding:16px; }
+  #receiptModal.open { display:flex; }
+  .receipt { background:#fff; color:#000; border-radius:12px; padding:24px; width:100%; max-width:340px; font-family:'Space Mono',monospace; font-size:.82rem; }
+
+  /* header icon */
+  .header-icon { width:32px; height:32px; margin-right:8px; vertical-align:middle; fill:var(--accent); }
+  .receipt-header { text-align:center; margin-bottom:16px; }
+  .receipt-shop { font-size:1.2rem; font-weight:700; }
+  .receipt-line { display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px dashed #ddd; }
+  .receipt-total { font-size:1.1rem; font-weight:700; display:flex; justify-content:space-between; padding-top:10px; }
+  .receipt-footer { text-align:center; color:#666; margin-top:14px; font-size:.75rem; }
+  .receipt-btns { display:flex; gap:8px; margin-top:12px; }
+  .receipt-btns button { flex:1; padding:10px; border:none; border-radius:8px; font-weight:700; font-family:inherit; cursor:pointer; font-size:.85rem; }
+  .rbtn-print { background:#000; color:#fff; }
+  .rbtn-close { background:#eee; color:#333; }
+
+  /* EXPENSES */
+  .exp-item { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border); font-size:.88rem; }
+  .exp-item:last-child { border-bottom:none; }
+  .exp-name { font-weight:600; }
+  .exp-amount { font-family:'Space Mono',monospace; color:var(--amber); font-weight:700; }
+  .exp-date { font-size:.73rem; color:var(--muted); }
+
+  .section-tabs { display:flex; gap:8px; margin-bottom:14px; }
+  .stab { padding:7px 16px; border-radius:8px; border:1px solid var(--border); background:none; color:var(--muted); font-family:inherit; font-size:.82rem; font-weight:600; cursor:pointer; }
+  .stab.active { background:var(--green); color:#000; border-color:var(--green); }
+
+  .empty { text-align:center; color:var(--muted); padding:32px 16px; font-size:.9rem; }
+
+  @media print {
+    body > *:not(#receiptModal) { display:none !important; }
+    #receiptModal { display:flex !important; position:static; background:none; }
+    .receipt-btns { display:none !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-box-inner">
+      <div class="login-accent">
+        <img id="loginThumb" src="https://images.unsplash.com/photo-1519710164239-da123dc03ef4?auto=format&fit=crop&w=200&q=60" alt="shop" />
+        <div>
+          <div class="login-logo">🛒 DukaSmart Pro</div>
+          <div class="login-sub">Your smart shop management system</div>
+        </div>
+      </div>
+      <input type="password" id="loginPin" placeholder="Enter PIN" maxlength="6" />
+      <button class="btn-primary" onclick="doLogin()">Open My Shop</button>
+      <p class="login-hint">New here? <span class="setup-link" onclick="showSetup()">Set up your shop</span></p>
+    </div>
+  </div>
+</div>
+
+<!-- SETUP -->
+<div id="setupScreen">
+  <div class="setup-box">
+    <h2>🏪 Set Up Your Shop</h2>
+    <p>This is a one-time setup. You can change it later in Settings.</p>
+    <div class="form-group"><label>Shop Name</label><input type="text" id="setupShopName" placeholder="e.g. Mama Njeri's Shop" /></div>
+    <div class="form-group"><label>Owner Name</label><input type="text" id="setupOwner" placeholder="Your name" /></div>
+    <div class="form-group"><label>Location</label><input type="text" id="setupLocation" placeholder="e.g. Nairobi, Westlands" /></div>
+    <div class="form-group"><label>Set PIN (4–6 digits)</label><input type="password" id="setupPin" placeholder="e.g. 1234" maxlength="6" /></div>
+    <div class="form-group"><label>Confirm PIN</label><input type="password" id="setupPin2" placeholder="Repeat PIN" maxlength="6" /></div>
+    <br>
+    <button class="btn-primary" onclick="doSetup()">Create My Shop ✓</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header>
+    <div>
+      <div class="header-logo" id="headerLogo"><svg class="header-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M3 9.5V7a1 1 0 011-1h16a1 1 0 011 1v2.5M3 9.5l1.5 9A1 1 0 006 19.5h12a1 1 0 00.98-.95L20 9.5M3 9.5h18M7 9.5v-2m10 2v-2" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg> DukaSmart Pro</div>
+      <div class="header-shop" id="headerShop">Loading...</div>
+    </div>
+    <div class="header-right">
+      <span class="header-time" id="clockEl"></span>
+      <button class="logout-btn" onclick="doLogout()">Lock 🔒</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- DASHBOARD -->
+    <div class="page active" id="pageDashboard">
+      <div class="page-title">📊 Dashboard</div>
+      <div class="stat-grid">
+        <div class="stat-card"><div class="stat-label">Products</div><div class="stat-value" id="statProducts">0</div></div>
+        <div class="stat-card"><div class="stat-label">Today's Sales</div><div class="stat-value" id="statToday">0</div></div>
+        <div class="stat-card"><div class="stat-label">Stock Value</div><div class="stat-value" id="statValue">0</div><div class="stat-sub">KSh</div></div>
+        <div class="stat-card"><div class="stat-label">Revenue Today</div><div class="stat-value" id="statRevenue">0</div><div class="stat-sub">KSh</div></div>
+        <div class="stat-card full"><div class="stat-label">Total Revenue (All Time)</div><div class="stat-value" id="statAllTime">0</div><div class="stat-sub">KSh</div></div>
+      </div>
+      <div id="lowStockAlerts"></div>
+      <div class="card">
+        <h3>📈 Last 7 Days Sales</h3>
+        <canvas id="weekChart" height="160"></canvas>
+      </div>
+    </div>
+
+    <!-- STOCK -->
+    <div class="page" id="pageStock">
+      <div class="page-title">📦 Stock</div>
+      <div class="card">
+        <h3>➕ Add Product</h3>
+        <div class="form-row">
+          <input class="inp" id="pName" placeholder="Product name" />
+          <select class="inp" id="pCategory">
+            <option value="">Category</option>
+            <option>Food & Drinks</option><option>Household</option><option>Electronics</option>
+            <option>Clothing</option><option>Toiletries</option><option>Stationery</option><option>Other</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <input class="inp" id="pPrice" type="number" placeholder="Price (KSh)" min="0" />
+          <input class="inp" id="pQty" type="number" placeholder="Quantity" min="0" />
+        </div>
+        <div class="form-row">
+          <input class="inp" id="pLow" type="number" placeholder="Low stock alert at" min="0" />
+          <button class="btn btn-green" onclick="addProduct()">Add Product</button>
+        </div>
+      </div>
+      <input class="search-bar" id="stockSearch" placeholder="🔍 Search products..." oninput="renderStock()" />
+      <div id="stockTable"></div>
+    </div>
+
+    <!-- SELL -->
+    <div class="page" id="pageSell">
+      <div class="page-title">💰 Sell</div>
+      <div class="card">
+        <h3>New Sale</h3>
+        <div class="form-row single">
+          <input class="inp" id="custName" placeholder="Customer name (optional)" />
+        </div>
+        <div class="form-row">
+          <select class="inp" id="sellProduct" onchange="fillPrice()"><option value="">Select product...</option></select>
+          <input class="inp" id="sellQty" type="number" placeholder="Qty" min="1" value="1" oninput="calcTotal()" />
+        </div>
+        <div class="form-row">
+          <input class="inp" id="sellPrice" type="number" placeholder="Price (KSh)" oninput="calcTotal()" />
+          <select class="inp" id="payMethod">
+            <option value="Cash">💵 Cash</option>
+            <option value="M-Pesa">📱 M-Pesa</option>
+            <option value="Card">💳 Card</option>
+          </select>
+        </div>
+        <div class="sell-total" id="sellTotal">KSh 0</div>
+        <button class="btn btn-green" style="width:100%;padding:14px;font-size:1rem;" onclick="recordSale()">✅ Record Sale & Print Receipt</button>
+      </div>
+      <div class="card">
+        <h3>🛒 Cart (Multi-item)</h3>
+        <div class="form-row">
+          <select class="inp" id="cartProduct" onchange="fillCartPrice()"><option value="">Select product...</option></select>
+          <input class="inp" id="cartQty" type="number" placeholder="Qty" min="1" value="1" />
+        </div>
+        <div class="form-row">
+          <input class="inp" id="cartPrice" type="number" placeholder="Price" />
+          <button class="btn btn-amber" onclick="addToCart()">Add to Cart</button>
+        </div>
+        <div id="cartItems"></div>
+        <div id="cartTotal" style="font-family:'Space Mono',monospace;font-size:1.1rem;font-weight:700;color:var(--accent);text-align:right;padding:8px 0;display:none;"></div>
+        <button class="btn btn-green" style="width:100%;margin-top:8px;padding:12px;display:none;" id="cartCheckoutBtn" onclick="checkoutCart()">✅ Checkout Cart</button>
+      </div>
+    </div>
+
+    <!-- HISTORY -->
+    <div class="page" id="pageHistory">
+      <div class="page-title">🗂️ History</div>
+      <div class="section-tabs">
+        <button class="stab active" onclick="switchHistTab('sales',this)">Sales</button>
+        <button class="stab" onclick="switchHistTab('expenses',this)">Expenses</button>
+      </div>
+      <div id="histSales">
+        <input class="search-bar" id="histSearch" placeholder="🔍 Search sales..." oninput="renderHistory()" />
+        <div id="historyList"></div>
+      </div>
+      <div id="histExpenses" style="display:none;">
+        <div class="card">
+          <h3>➕ Add Expense</h3>
+          <div class="form-row">
+            <input class="inp" id="expName" placeholder="Expense description" />
+            <input class="inp" id="expAmount" type="number" placeholder="Amount (KSh)" />
+          </div>
+          <div class="form-row">
+            <select class="inp" id="expCategory">
+              <option value="Rent">Rent</option><option value="Stock purchase">Stock purchase</option>
+              <option value="Utilities">Utilities</option><option value="Wages">Wages</option>
+              <option value="Transport">Transport</option><option value="Other">Other</option>
+            </select>
+            <button class="btn btn-amber" onclick="addExpense()">Add</button>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Expense Records</h3>
+          <div id="expenseList"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REPORTS -->
+    <div class="page" id="pageReports">
+      <div class="page-title">📈 Reports</div>
+      <div class="section-tabs">
+        <button class="stab active" onclick="switchRptTab('weekly',this)">Weekly</button>
+        <button class="stab" onclick="switchRptTab('monthly',this)">Monthly</button>
+        <button class="stab" onclick="switchRptTab('profit',this)">Profit</button>
+      </div>
+      <div id="rptWeekly">
+        <div class="card"><h3>This Week's Sales</h3><canvas id="weeklyChart" height="180"></canvas></div>
+        <div id="weeklyStats"></div>
+      </div>
+      <div id="rptMonthly" style="display:none;">
+        <div class="card"><h3>This Month's Sales</h3><canvas id="monthlyChart" height="180"></canvas></div>
+        <div id="monthlyStats"></div>
+      </div>
+      <div id="rptProfit" style="display:none;">
+        <div class="stat-grid" id="profitStats"></div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="page" id="pageSettings">
+      <div class="page-title">⚙️ Settings</div>
+      <div class="card">
+        <h3>Shop Info</h3>
+        <div class="form-group" style="margin-bottom:10px;"><label style="display:block;font-size:.78rem;color:var(--muted);margin-bottom:4px;">Shop Name</label><input class="inp" id="setShopName" /></div>
+        <div class="form-group" style="margin-bottom:10px;"><label style="display:block;font-size:.78rem;color:var(--muted);margin-bottom:4px;">Owner Name</label><input class="inp" id="setOwner" /></div>
+        <div class="form-group" style="margin-bottom:10px;"><label style="display:block;font-size:.78rem;color:var(--muted);margin-bottom:4px;">Location</label><input class="inp" id="setLocation" /></div>
+        <div class="form-group" style="margin-bottom:10px;"><label style="display:block;font-size:.78rem;color:var(--muted);margin-bottom:4px;">Phone (for receipts)</label><input class="inp" id="setPhone" placeholder="e.g. 0712 345 678" /></div>
+        <button class="btn btn-green" onclick="saveSettings()">Save Changes</button>
+      </div>
+      <div class="card">
+        <h3>Theme</h3>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn stab" onclick="applyTheme('default')">Default</button>
+          <button class="btn stab" onclick="applyTheme('tropical')">Tropical</button>
+          <button class="btn stab" onclick="applyTheme('light')">Light</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Change PIN</h3>
+        <div class="form-group" style="margin-bottom:10px;"><label style="display:block;font-size:.78rem;color:var(--muted);margin-bottom:4px;">Current PIN</label><input class="inp" type="password" id="oldPin" /></div>
+        <div class="form-group" style="margin-bottom:10px;"><label style="display:block;font-size:.78rem;color:var(--muted);margin-bottom:4px;">New PIN</label><input class="inp" type="password" id="newPin" /></div>
+        <div class="form-group" style="margin-bottom:10px;"><label style="display:block;font-size:.78rem;color:var(--muted);margin-bottom:4px;">Confirm New PIN</label><input class="inp" type="password" id="newPin2" /></div>
+        <button class="btn btn-amber" onclick="changePin()">Change PIN</button>
+      </div>
+      <div class="card">
+        <h3>Data</h3>
+        <button class="btn btn-red btn-sm" onclick="exportData()">📤 Export Data (JSON)</button>
+        &nbsp;
+        <button class="btn btn-red btn-sm" onclick="if(confirm('Clear ALL data? This cannot be undone!'))clearData()">🗑️ Clear All Data</button>
+      </div>
+      <div class="card">
+        <h3>About</h3>
+        <p style="font-size:.83rem;color:var(--muted);line-height:1.6;">DukaSmart Pro v2.0<br>Built for Kenyan shop owners 🇰🇪<br>Works offline — data saved on your device.</p>
+      </div>
+    </div>
+  </main>
+
+  <nav>
+    <button class="active" onclick="showPage('Dashboard',this)"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dash</button>
+    <button onclick="showPage('Stock',this)"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/></svg>Stock</button>
+    <button onclick="showPage('Sell',this)"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>Sell</button>
+    <button onclick="showPage('History',this)"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 012 2M9 5h6"/></svg>History</button>
+    <button onclick="showPage('Reports',this)"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Reports</button>
+    <button onclick="showPage('Settings',this)"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Settings</button>
+  </nav>
+</div>
+
+<!-- RECEIPT MODAL -->
+<div id="receiptModal">
+  <div class="receipt">
+    <div class="receipt-header">
+      <div class="receipt-shop" id="rShopName">Shop Name</div>
+      <div id="rLocation" style="font-size:.75rem;"></div>
+      <div id="rPhone" style="font-size:.75rem;"></div>
+      <div style="border-top:1px dashed #ccc;margin:8px 0;"></div>
+      <div id="rDate" style="font-size:.75rem;"></div>
+      <div id="rReceiptNo" style="font-size:.75rem;color:#666;"></div>
+    </div>
+    <div id="rItems"></div>
+    <div style="border-top:2px solid #000;margin:8px 0;"></div>
+    <div class="receipt-total"><span>TOTAL</span><span id="rTotal"></span></div>
+    <div id="rPayMethod" style="font-size:.8rem;margin-top:4px;"></div>
+    <div id="rCustomer" style="font-size:.8rem;margin-top:2px;"></div>
+    <div class="receipt-footer">
+      <div id="rOwner"></div>
+      <div style="margin-top:8px;">Asante kwa kununua! 🙏</div>
+      <div>Thank you for shopping with us!</div>
+    </div>
+    <div class="receipt-btns">
+      <button class="rbtn-print" onclick="window.print()">🖨️ Print</button>
+      <button class="rbtn-close" onclick="closeReceipt()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== DATA =====
+let data = {
+  settings: { shopName:'DukaSmart Pro', owner:'Owner', location:'Nairobi', phone:'', pin:'1234' },
+  products: [],
+  sales: [],
+  expenses: [],
+  cart: []
+};
+
+function save() { localStorage.setItem('dukasmartpro', JSON.stringify(data)); }
+function load() {
+  const d = localStorage.getItem('dukasmartpro');
+  if (d) data = JSON.parse(d);
+}
+
+// Theme handling: set CSS variables dynamically
+function applyTheme(name) {
+  const themes = {
+    default: {
+      '--bg':'#0a0f0d','--surface':'#111a15','--card':'#172019','--border':'#1f3024',
+      '--green':'#22c55e','--green-dim':'#16a34a','--green-glow':'rgba(64,34,197,0.15)',
+      '--amber':'#f59e0b','--red':'#ef4444','--text':'#e8f5ec','--muted':'#6b8f74','--accent':'#4ade80'
+    },
+    tropical: {
+      '--bg':'#062b2f','--surface':'#07343a','--card':'#0b4b4f','--border':'#0e2728',
+      '--green':'#06b6d4','--green-dim':'#0891b2','--green-glow':'rgba(6,182,212,0.12)',
+      '--amber':'#ffb86b','--red':'#ff6b6b','--text':'#f0fff9','--muted':'#9bd5cf','--accent':'#34d399'
+    },
+    light: {
+      '--bg':'#f7fafc','--surface':'#ffffff','--card':'#f1f5f9','--border':'#e2e8f0',
+      '--green':'#10b981','--green-dim':'#059669','--green-glow':'rgba(16,185,129,0.08)',
+      '--amber':'#f59e0b','--red':'#ef4444','--text':'#0f172a','--muted':'#64748b','--accent':'#06b6d4'
+    }
+  };
+  const t = themes[name] || themes.default;
+  Object.keys(t).forEach(k=>document.documentElement.style.setProperty(k,t[k]));
+  data.settings.theme = name;
+  save();
+}
+
+// ===== AUTH =====
+function isSetup() { return localStorage.getItem('dukasmartpro') !== null; }
+
+function showSetup() {
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('setupScreen').style.display='flex';
+}
+
+function doSetup() {
+  const sn = document.getElementById('setupShopName').value.trim();
+  const ow = document.getElementById('setupOwner').value.trim();
+  const lo = document.getElementById('setupLocation').value.trim();
+  const p1 = document.getElementById('setupPin').value;
+  const p2 = document.getElementById('setupPin2').value;
+  if (!sn||!ow||!p1) return alert('Please fill in shop name, owner name, and PIN.');
+  if (p1 !== p2) return alert('PINs do not match!');
+  if (p1.length < 4) return alert('PIN must be at least 4 digits.');
+  data.settings = { shopName:sn, owner:ow, location:lo||'Kenya', phone:'', pin:p1 };
+  save();
+  openApp();
+}
+
+function doLogin() {
+  load();
+  const pin = document.getElementById('loginPin').value;
+  if (pin === data.settings.pin) { openApp(); }
+  else { alert('Wrong PIN. Try again.'); document.getElementById('loginPin').value=''; }
+}
+
+function doLogout() {
+  document.getElementById('app').style.display='none';
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('loginPin').value='';
+}
+
+function openApp() {
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('setupScreen').style.display='none';
+  document.getElementById('app').style.display='flex';
+  applySettings();
+  renderDashboard();
+  populateSellDropdowns();
+  renderStock();
+  renderHistory();
+  renderExpenses();
+  startClock();
+}
+
+window.onload = function() {
+  if (isSetup()) { document.getElementById('loginScreen').style.display='flex'; }
+  else { showSetup(); }
+};
+
+// Register service worker for PWA (requires HTTPS or localhost)
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('service-worker.js')
+    .then(() => console.log('Service worker registered'))
+    .catch((err) => console.warn('SW registration failed:', err));
+}
+
+// ===== CLOCK =====
+function startClock() {
+  function tick() {
+    const now = new Date();
+    document.getElementById('clockEl').textContent =
+      now.toLocaleTimeString('en-KE',{hour:'2-digit',minute:'2-digit'});
+  }
+  tick(); setInterval(tick, 10000);
+}
+
+// ===== SETTINGS =====
+function applySettings() {
+  document.getElementById('headerLogo').textContent = '🛒 ' + data.settings.shopName;
+  document.getElementById('headerShop').textContent = data.settings.owner + ' · ' + data.settings.location;
+  document.getElementById('setShopName').value = data.settings.shopName;
+  document.getElementById('setOwner').value = data.settings.owner;
+  document.getElementById('setLocation').value = data.settings.location;
+  document.getElementById('setPhone').value = data.settings.phone||'';
+  // Apply saved theme if present
+  if (data.settings.theme) applyTheme(data.settings.theme);
+}
+
+function saveSettings() {
+  data.settings.shopName = document.getElementById('setShopName').value.trim() || data.settings.shopName;
+  data.settings.owner = document.getElementById('setOwner').value.trim() || data.settings.owner;
+  data.settings.location = document.getElementById('setLocation').value.trim() || data.settings.location;
+  data.settings.phone = document.getElementById('setPhone').value.trim();
+  save(); applySettings(); alert('✅ Settings saved!');
+}
+
+function changePin() {
+  const old = document.getElementById('oldPin').value;
+  const n1 = document.getElementById('newPin').value;
+  const n2 = document.getElementById('newPin2').value;
+  if (old !== data.settings.pin) return alert('Current PIN is wrong.');
+  if (n1 !== n2) return alert('New PINs do not match.');
+  if (n1.length < 4) return alert('PIN must be at least 4 digits.');
+  data.settings.pin = n1; save();
+  document.getElementById('oldPin').value='';document.getElementById('newPin').value='';document.getElementById('newPin2').value='';
+  alert('✅ PIN changed!');
+}
+
+// ===== NAVIGATION =====
+function showPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page'+name).classList.add('active');
+  btn.classList.add('active');
+  if (name==='Dashboard') renderDashboard();
+  if (name==='Stock') renderStock();
+  if (name==='Sell') { populateSellDropdowns(); renderCart(); }
+  if (name==='History') { renderHistory(); renderExpenses(); }
+  if (name==='Reports') renderReports();
+}
+
+// ===== DASHBOARD =====
+function renderDashboard() {
+  const today = new Date().toDateString();
+  const todaySales = data.sales.filter(s=>new Date(s.date).toDateString()===today);
+  const totalRevToday = todaySales.reduce((a,s)=>a+s.total,0);
+  const totalRevAll = data.sales.reduce((a,s)=>a+s.total,0);
+  const stockVal = data.products.reduce((a,p)=>a+p.price*p.qty,0);
+  document.getElementById('statProducts').textContent = data.products.length;
+  document.getElementById('statToday').textContent = todaySales.length;
+  document.getElementById('statValue').textContent = fmt(stockVal);
+  document.getElementById('statRevenue').textContent = fmt(totalRevToday);
+  document.getElementById('statAllTime').textContent = fmt(totalRevAll);
+  // low stock alerts
+  const low = data.products.filter(p=>p.qty<=p.lowAt);
+  const alertEl = document.getElementById('lowStockAlerts');
+  if (low.length) {
+    alertEl.innerHTML = '<div style="font-size:.78rem;color:var(--red);font-weight:700;margin-bottom:6px;">⚠️ LOW STOCK ALERTS</div>' +
+      low.map(p=>`<div class="alert-item"><span class="aname">${p.name}</span><span class="aqty">${p.qty} left</span></div>`).join('');
+  } else { alertEl.innerHTML = ''; }
+  // 7 day chart
+  drawWeekChart();
+}
+
+function drawWeekChart() {
+  const canvas = document.getElementById('weekChart');
+  const ctx = canvas.getContext('2d');
+  const days = [];
+  const vals = [];
+  for (let i=6;i>=0;i--) {
+    const d = new Date(); d.setDate(d.getDate()-i);
+    days.push(d.toLocaleDateString('en-KE',{weekday:'short'}));
+    const ds = d.toDateString();
+    vals.push(data.sales.filter(s=>new Date(s.date).toDateString()===ds).reduce((a,s)=>a+s.total,0));
+  }
+  drawBarChart(ctx, canvas, days, vals, '#22c55e');
+}
+
+function drawBarChart(ctx, canvas, labels, values, color) {
+  canvas.width = canvas.offsetWidth || 340;
+  canvas.height = parseInt(canvas.getAttribute('height'))||160;
+  const W=canvas.width, H=canvas.height, pad=30, barPad=8;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#172019'; ctx.fillRect(0,0,W,H);
+  const max=Math.max(...values,1);
+  const bw=(W-pad*2)/labels.length - barPad;
+  labels.forEach((l,i)=>{
+    const x=pad+i*(bw+barPad);
+    const bh=(values[i]/max)*(H-pad*1.5);
+    const y=H-pad-bh;
+    ctx.fillStyle=color+'33';
+    ctx.fillRect(x,H-pad-H+pad*1.5,bw,H-pad*2.5);
+    ctx.fillStyle=color;
+    ctx.fillRect(x,y,bw,bh);
+    ctx.fillStyle='#6b8f74'; ctx.font='10px Space Mono,monospace';
+    ctx.textAlign='center';
+    ctx.fillText(l,x+bw/2,H-6);
+    if(values[i]>0){
+      ctx.fillStyle='#e8f5ec';
+      ctx.fillText(values[i]>=1000?(values[i]/1000).toFixed(1)+'k':values[i],x+bw/2,y-4);
+    }
+  });
+}
+
+// ===== STOCK =====
+function addProduct() {
+  const name=document.getElementById('pName').value.trim();
+  const cat=document.getElementById('pCategory').value;
+  const price=parseFloat(document.getElementById('pPrice').value)||0;
+  const qty=parseInt(document.getElementById('pQty').value)||0;
+  const lowAt=parseInt(document.getElementById('pLow').value)||5;
+  if (!name) return alert('Please enter a product name.');
+  if (price<=0) return alert('Please enter a valid price.');
+  const prod = { id:Date.now(), name, category:cat||'Other', price, qty, lowAt };
+  data.products.push(prod);
+  save();
+  document.getElementById('pName').value='';
+  document.getElementById('pPrice').value='';
+  document.getElementById('pQty').value='';
+  document.getElementById('pLow').value='';
+  renderStock(); populateSellDropdowns();
+}
+
+function renderStock() {
+  const q = document.getElementById('stockSearch').value.toLowerCase();
+  const prods = data.products.filter(p=>p.name.toLowerCase().includes(q)||p.category.toLowerCase().includes(q));
+  const el = document.getElementById('stockTable');
+  if (!prods.length) { el.innerHTML='<div class="empty">No products yet. Add your first product above!</div>'; return; }
+  el.innerHTML = `<div class="card" style="padding:0;overflow:hidden;">
+    <div class="table-wrap"><table>
+    <thead><tr><th>Product</th><th>Price</th><th>Qty</th><th>Action</th></tr></thead>
+    <tbody>${prods.map(p=>{
+      const tag = p.qty<=0?'tag-low':p.qty<=p.lowAt?'tag-warn':'tag-ok';
+      const tagText = p.qty<=0?'Out':'Low OK'.split(' ')[p.qty<=p.lowAt?0:1]+(p.qty<=p.lowAt&&p.qty>0?'':'');
+      return `<tr>
+        <td><div style="font-weight:600">${p.name}</div><div style="font-size:.72rem;color:var(--muted)">${p.category}</div></td>
+        <td style="font-family:'Space Mono',monospace">KSh ${fmt(p.price)}</td>
+        <td><span class="tag ${p.qty<=0?'tag-low':p.qty<=p.lowAt?'tag-warn':'tag-ok'}">${p.qty}</span></td>
+        <td style="white-space:nowrap">
+          <button class="btn btn-amber btn-sm" onclick="restockProd(${p.id})">+</button>
+          <button class="btn btn-red btn-sm" onclick="deleteProd(${p.id})" style="margin-left:4px">🗑</button>
+        </td>
+      </tr>`;
+    }).join('')}</tbody></table></div></div>`;
+}
+
+function restockProd(id) {
+  const p = data.products.find(x=>x.id===id);
+  if (!p) return;
+  const n = prompt(`Restock "${p.name}"\nCurrent: ${p.qty}\nAdd how many?`);
+  const add = parseInt(n);
+  if (isNaN(add)||add<=0) return;
+  p.qty += add; save(); renderStock();
+}
+
+function deleteProd(id) {
+  if (!confirm('Delete this product?')) return;
+  data.products = data.products.filter(p=>p.id!==id);
+  save(); renderStock(); populateSellDropdowns();
+}
+
+// ===== SELL =====
+function populateSellDropdowns() {
+  const opts = '<option value="">Select product...</option>' +
+    data.products.map(p=>`<option value="${p.id}">${p.name} (${p.qty} left) — KSh ${fmt(p.price)}</option>`).join('');
+  document.getElementById('sellProduct').innerHTML = opts;
+  document.getElementById('cartProduct').innerHTML = opts;
+}
+
+function fillPrice() {
+  const id = parseInt(document.getElementById('sellProduct').value);
+  const p = data.products.find(x=>x.id===id);
+  if (p) document.getElementById('sellPrice').value = p.price;
+  calcTotal();
+}
+function fillCartPrice() {
+  const id = parseInt(document.getElementById('cartProduct').value);
+  const p = data.products.find(x=>x.id===id);
+  if (p) document.getElementById('cartPrice').value = p.price;
+}
+function calcTotal() {
+  const qty = parseFloat(document.getElementById('sellQty').value)||0;
+  const price = parseFloat(document.getElementById('sellPrice').value)||0;
+  document.getElementById('sellTotal').textContent = 'KSh ' + fmt(qty*price);
+}
+
+function recordSale() {
+  const prodId = parseInt(document.getElementById('sellProduct').value);
+  const qty = parseInt(document.getElementById('sellQty').value)||0;
+  const price = parseFloat(document.getElementById('sellPrice').value)||0;
+  const cust = document.getElementById('custName').value.trim();
+  const pay = document.getElementById('payMethod').value;
+  if (!prodId) return alert('Select a product.');
+  if (qty<=0) return alert('Enter quantity.');
+  const p = data.products.find(x=>x.id===prodId);
+  if (!p) return;
+  if (p.qty < qty) return alert(`Only ${p.qty} in stock!`);
+  const total = qty*price;
+  const sale = { id:Date.now(), items:[{name:p.name,qty,price,subtotal:total}], total, customer:cust, payMethod:pay, date:new Date().toISOString() };
+  p.qty -= qty;
+  data.sales.push(sale);
+  save();
+  document.getElementById('sellProduct').value='';
+  document.getElementById('sellQty').value=1;
+  document.getElementById('sellPrice').value='';
+  document.getElementById('custName').value='';
+  document.getElementById('sellTotal').textContent='KSh 0';
+  populateSellDropdowns();
+  showReceipt(sale);
+}
+
+// ===== CART =====
+function addToCart() {
+  const id = parseInt(document.getElementById('cartProduct').value);
+  const qty = parseInt(document.getElementById('cartQty').value)||1;
+  const price = parseFloat(document.getElementById('cartPrice').value)||0;
+  if (!id||!price) return alert('Select product and enter price.');
+  const p = data.products.find(x=>x.id===id);
+  if (!p) return;
+  const existing = data.cart.find(c=>c.prodId===id);
+  if (existing) { existing.qty+=qty; existing.subtotal=existing.qty*existing.price; }
+  else data.cart.push({prodId:id,name:p.name,qty,price,subtotal:qty*price});
+  renderCart();
+}
+
+function renderCart() {
+  const el = document.getElementById('cartItems');
+  const totEl = document.getElementById('cartTotal');
+  const btnEl = document.getElementById('cartCheckoutBtn');
+  if (!data.cart.length) { el.innerHTML='<div style="color:var(--muted);font-size:.83rem;padding:8px 0">Cart is empty</div>'; totEl.style.display='none'; btnEl.style.display='none'; return; }
+  const total = data.cart.reduce((a,c)=>a+c.subtotal,0);
+  el.innerHTML = data.cart.map((c,i)=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)">
+      <div><div style="font-size:.88rem;font-weight:600">${c.name}</div><div style="font-size:.75rem;color:var(--muted)">${c.qty} × KSh ${fmt(c.price)}</div></div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-family:'Space Mono',monospace;font-size:.9rem;color:var(--accent)">KSh ${fmt(c.subtotal)}</span>
+        <button class="btn btn-red btn-sm" onclick="removeCart(${i})">✕</button>
+      </div>
+    </div>`).join('');
+  totEl.textContent = 'Total: KSh ' + fmt(total);
+  totEl.style.display='block'; btnEl.style.display='block';
+}
+
+function removeCart(i) { data.cart.splice(i,1); renderCart(); }
+
+function checkoutCart() {
+  if (!data.cart.length) return;
+  const cust = prompt('Customer name (optional):');
+  const pay = prompt('Payment: Cash / M-Pesa / Card') || 'Cash';
+  // check stock
+  for (const c of data.cart) {
+    const p = data.products.find(x=>x.id===c.prodId);
+    if (!p||p.qty<c.qty) return alert(`Not enough stock for ${c.name}`);
+  }
+  const total = data.cart.reduce((a,c)=>a+c.subtotal,0);
+  const items = data.cart.map(c=>({name:c.name,qty:c.qty,price:c.price,subtotal:c.subtotal}));
+  data.cart.forEach(c=>{
+    const p = data.products.find(x=>x.id===c.prodId);
+    if(p) p.qty -= c.qty;
+  });
+  const sale = {id:Date.now(), items, total, customer:cust||'', payMethod:pay, date:new Date().toISOString()};
+  data.sales.push(sale);
+  data.cart = [];
+  save();
+  populateSellDropdowns(); renderCart();
+  showReceipt(sale);
+}
+
+// ===== RECEIPT =====
+function showReceipt(sale) {
+  const s = data.settings;
+  document.getElementById('rShopName').textContent = s.shopName;
+  document.getElementById('rLocation').textContent = s.location;
+  document.getElementById('rPhone').textContent = s.phone ? '📞 '+s.phone : '';
+  document.getElementById('rDate').textContent = new Date(sale.date).toLocaleString('en-KE');
+  document.getElementById('rReceiptNo').textContent = 'Receipt #' + String(sale.id).slice(-6);
+  document.getElementById('rOwner').textContent = s.owner;
+  document.getElementById('rItems').innerHTML = sale.items.map(it=>
+    `<div class="receipt-line"><span>${it.name} ×${it.qty}</span><span>KSh ${fmt(it.subtotal)}</span></div>`).join('');
+  document.getElementById('rTotal').textContent = 'KSh ' + fmt(sale.total);
+  document.getElementById('rPayMethod').textContent = '💳 ' + sale.payMethod;
+  document.getElementById('rCustomer').textContent = sale.customer ? '👤 ' + sale.customer : '';
+  document.getElementById('receiptModal').classList.add('open');
+}
+function closeReceipt() { document.getElementById('receiptModal').classList.remove('open'); }
+
+// ===== HISTORY =====
+function switchHistTab(tab, btn) {
+  document.querySelectorAll('#pageHistory .stab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('histSales').style.display = tab==='sales'?'block':'none';
+  document.getElementById('histExpenses').style.display = tab==='expenses'?'block':'none';
+}
+
+function renderHistory() {
+  const q = document.getElementById('histSearch').value.toLowerCase();
+  const el = document.getElementById('historyList');
+  const sorted = [...data.sales].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const filtered = sorted.filter(s=>
+    s.items.some(i=>i.name.toLowerCase().includes(q)) ||
+    (s.customer||'').toLowerCase().includes(q) ||
+    s.payMethod.toLowerCase().includes(q)
+  );
+  if (!filtered.length) { el.innerHTML='<div class="empty">No sales yet.</div>'; return; }
+  el.innerHTML = filtered.map(s=>`
+    <div class="hist-item">
+      <div class="hist-top">
+        <div class="hist-name">${s.items.map(i=>i.name+(s.items.length>1?` ×${i.qty}`:'')).join(', ')}</div>
+        <div class="hist-amount">KSh ${fmt(s.total)}</div>
+      </div>
+      <div class="hist-meta">
+        ${new Date(s.date).toLocaleString('en-KE')} · ${s.payMethod}${s.customer?' · 👤 '+s.customer:''}
+      </div>
+    </div>`).join('');
+}
+
+// ===== EXPENSES =====
+function addExpense() {
+  const name = document.getElementById('expName').value.trim();
+  const amount = parseFloat(document.getElementById('expAmount').value)||0;
+  const cat = document.getElementById('expCategory').value;
+  if (!name||amount<=0) return alert('Fill in description and amount.');
+  data.expenses.push({id:Date.now(),name,amount,category:cat,date:new Date().toISOString()});
+  save();
+  document.getElementById('expName').value='';
+  document.getElementById('expAmount').value='';
+  renderExpenses();
+}
+
+function renderExpenses() {
+  const el = document.getElementById('expenseList');
+  const sorted = [...data.expenses].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  if (!sorted.length) { el.innerHTML='<div class="empty">No expenses recorded.</div>'; return; }
+  el.innerHTML = sorted.map(e=>`
+    <div class="exp-item">
+      <div><div class="exp-name">${e.name}</div><div class="exp-date">${e.category} · ${new Date(e.date).toLocaleDateString('en-KE')}</div></div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="exp-amount">KSh ${fmt(e.amount)}</span>
+        <button class="btn btn-red btn-sm" onclick="deleteExp(${e.id})">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+function deleteExp(id) {
+  data.expenses = data.expenses.filter(e=>e.id!==id);
+  save(); renderExpenses();
+}
+
+// ===== REPORTS =====
+function switchRptTab(tab, btn) {
+  document.querySelectorAll('#pageReports .stab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('rptWeekly').style.display=tab==='weekly'?'block':'none';
+  document.getElementById('rptMonthly').style.display=tab==='monthly'?'block':'none';
+  document.getElementById('rptProfit').style.display=tab==='profit'?'block':'none';
+  renderReports(tab);
+}
+
+function renderReports(tab) {
+  tab = tab || 'weekly';
+  // WEEKLY
+  if (tab==='weekly'||tab===undefined) {
+    const labels=[], vals=[];
+    for(let i=6;i>=0;i--){
+      const d=new Date(); d.setDate(d.getDate()-i);
+      labels.push(d.toLocaleDateString('en-KE',{weekday:'short',day:'numeric'}));
+      vals.push(data.sales.filter(s=>new Date(s.date).toDateString()===d.toDateString()).reduce((a,s)=>a+s.total,0));
+    }
+    const canvas=document.getElementById('weeklyChart');
+    drawBarChart(canvas.getContext('2d'),canvas,labels,vals,'#22c55e');
+    const total=vals.reduce((a,v)=>a+v,0);
+    const avg=total/7;
+    const best=Math.max(...vals);
+    document.getElementById('weeklyStats').innerHTML=`
+      <div class="stat-grid">
+        <div class="stat-card"><div class="stat-label">Week Total</div><div class="stat-value">${fmt(total)}</div><div class="stat-sub">KSh</div></div>
+        <div class="stat-card"><div class="stat-label">Daily Avg</div><div class="stat-value">${fmt(Math.round(avg))}</div><div class="stat-sub">KSh</div></div>
+        <div class="stat-card full"><div class="stat-label">Best Day</div><div class="stat-value">${fmt(best)}</div><div class="stat-sub">KSh</div></div>
+      </div>`;
+  }
+  if (tab==='monthly') {
+    const now=new Date();
+    const labels=[], vals=[];
+    for(let i=29;i>=0;i--){
+      const d=new Date(); d.setDate(d.getDate()-i);
+      labels.push(d.getDate()+'');
+      vals.push(data.sales.filter(s=>new Date(s.date).toDateString()===d.toDateString()).reduce((a,s)=>a+s.total,0));
+    }
+    const canvas=document.getElementById('monthlyChart');
+    drawBarChart(canvas.getContext('2d'),canvas,labels,vals,'#4ade80');
+    const total=vals.reduce((a,v)=>a+v,0);
+    document.getElementById('monthlyStats').innerHTML=`
+      <div class="stat-grid">
+        <div class="stat-card full"><div class="stat-label">Month Total (30 days)</div><div class="stat-value">${fmt(total)}</div><div class="stat-sub">KSh</div></div>
+      </div>`;
+  }
+  if (tab==='profit') {
+    const totalRev=data.sales.reduce((a,s)=>a+s.total,0);
+    const totalExp=data.expenses.reduce((a,e)=>a+e.amount,0);
+    const profit=totalRev-totalExp;
+    document.getElementById('profitStats').innerHTML=`
+      <div class="stat-card full"><div class="stat-label">Total Revenue</div><div class="stat-value" style="color:var(--green)">${fmt(totalRev)}</div><div class="stat-sub">KSh</div></div>
+      <div class="stat-card full"><div class="stat-label">Total Expenses</div><div class="stat-value" style="color:var(--amber)">${fmt(totalExp)}</div><div class="stat-sub">KSh</div></div>
+      <div class="stat-card full"><div class="stat-label">Net Profit</div><div class="stat-value" style="color:${profit>=0?'var(--accent)':'var(--red)'}">${fmt(profit)}</div><div class="stat-sub">KSh</div></div>`;
+  }
+}
+
+// ===== UTILS =====
+function fmt(n) {
+  if (isNaN(n)) return '0';
+  return Number(n).toLocaleString('en-KE');
+}
+
+function exportData() {
+  const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'dukasmartpro_backup_'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();
+}
+
+function clearData() {
+  localStorage.removeItem('dukasmartpro');
+  location.reload();
+}
+</script>
+</body>
+</html>
